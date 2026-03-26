@@ -6,9 +6,15 @@ import { RestaurantDetail } from "@/components/RestaurantDetail"
 import { AddVisitModal } from "@/components/AddVisitModal"
 import { VisitForm } from "@/components/VisitForm"
 import { activeAdapter } from "@/lib/storage"
+import {
+  FilterStripCluster,
+  FilterStripRow,
+  MealTypeToggleGroup,
+  filterToggleOnClass,
+} from "@/components/FilterBar"
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty-state"
-import { Store } from "lucide-react"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { Store } from "lucide-react"
 
 const SORT_OPTIONS: { label: string; value: SortOrder }[] = [
   { label: "Most recent", value: "recent" },
@@ -18,11 +24,16 @@ const SORT_OPTIONS: { label: string; value: SortOrder }[] = [
 
 export function Restaurants() {
   const { visits, addVisit } = useVisits(activeAdapter)
+  const [activeFilter, setActiveFilter] = useState<string | null>(null)
   const [sort, setSort] = useState<SortOrder>("recent")
   const [selectedName, setSelectedName] = useState<string | null>(null)
   const [prefillName, setPrefillName] = useState<string | null>(null)
 
-  const restaurants = deriveRestaurants(visits, sort)
+  const mealTypes = [...new Set(visits.map((v) => v.mealType).filter((t): t is string => t !== null))]
+  const filteredVisits =
+    activeFilter === null ? visits : visits.filter((v) => v.mealType === activeFilter)
+
+  const restaurants = deriveRestaurants(filteredVisits, sort)
   const restaurantSuggestions = [...new Set(visits.map((v) => v.restaurantName))]
 
   function handleAddVisit(name: string) {
@@ -31,27 +42,32 @@ export function Restaurants() {
   }
 
   return (
-    <div className="mx-auto max-w-xl p-4">
-      <div className="mb-4">
-        <ToggleGroup
-          type="single"
-          variant="outline"
-          size="sm"
-          value={sort}
-          onValueChange={(val) => val && setSort(val as SortOrder)}
-        >
-          {SORT_OPTIONS.map((opt) => (
-            <ToggleGroupItem
-              key={opt.value}
-              value={opt.value}
-              className="data-[state=on]:bg-amber-500 data-[state=on]:text-black data-[state=on]:border-amber-500"
-            >
-              {opt.label}
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
-      </div>
-
+    <>
+      <FilterStripRow>
+        <FilterStripCluster label="Filter">
+          <MealTypeToggleGroup
+            mealTypes={mealTypes}
+            active={activeFilter}
+            onChange={setActiveFilter}
+          />
+        </FilterStripCluster>
+        <FilterStripCluster label="Sort">
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            size="sm"
+            value={sort}
+            onValueChange={(val) => val && setSort(val as SortOrder)}
+          >
+            {SORT_OPTIONS.map((opt) => (
+              <ToggleGroupItem key={opt.value} value={opt.value} className={filterToggleOnClass}>
+                {opt.label}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+        </FilterStripCluster>
+      </FilterStripRow>
+      <div className="mx-auto max-w-xl p-4">
       {restaurants.length === 0 ? (
         <Empty className="border border-dashed">
           <EmptyHeader>
@@ -115,6 +131,7 @@ export function Restaurants() {
           }}
         />
       </AddVisitModal>
-    </div>
+      </div>
+    </>
   )
 }

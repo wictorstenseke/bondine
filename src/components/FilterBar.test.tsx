@@ -6,7 +6,7 @@ import { FilterBar } from "./FilterBar"
 describe("FilterBar", () => {
   it("always shows an All pill", () => {
     render(<FilterBar mealTypes={[]} active={null} onChange={vi.fn()} />)
-    expect(screen.getByRole("button", { name: /all/i })).toBeInTheDocument()
+    expect(screen.getByRole("radio", { name: /all/i })).toBeInTheDocument()
   })
 
   it("renders a pill for each meal type", () => {
@@ -17,8 +17,8 @@ describe("FilterBar", () => {
         onChange={vi.fn()}
       />,
     )
-    expect(screen.getByRole("button", { name: /lunch/i })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /dinner/i })).toBeInTheDocument()
+    expect(screen.getByRole("radio", { name: /lunch/i })).toBeInTheDocument()
+    expect(screen.getByRole("radio", { name: /dinner/i })).toBeInTheDocument()
   })
 
   it("calls onChange with the meal type when a pill is clicked", async () => {
@@ -26,14 +26,14 @@ describe("FilterBar", () => {
     render(
       <FilterBar mealTypes={["lunch"]} active={null} onChange={onChange} />,
     )
-    await userEvent.click(screen.getByRole("button", { name: /lunch/i }))
+    await userEvent.click(screen.getByRole("radio", { name: /lunch/i }))
     expect(onChange).toHaveBeenCalledWith("lunch")
   })
 
   it("calls onChange with null when All is clicked", async () => {
     const onChange = vi.fn()
     render(<FilterBar mealTypes={["lunch"]} active="lunch" onChange={onChange} />)
-    await userEvent.click(screen.getByRole("button", { name: /all/i }))
+    await userEvent.click(screen.getByRole("radio", { name: /all/i }))
     expect(onChange).toHaveBeenCalledWith(null)
   })
 })

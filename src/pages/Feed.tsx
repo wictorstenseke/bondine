@@ -33,8 +33,9 @@ export function Feed({ adapter }: Props) {
     })
 
   return (
-    <div className="mx-auto max-w-xl">
+    <>
       <FilterBar mealTypes={mealTypes} active={activeFilter} onChange={setActiveFilter} />
+      <div className="mx-auto max-w-xl">
       <div className="p-4">
       {sorted.length === 0 ? (
         <Empty className="border border-dashed">
@@ -83,6 +84,7 @@ export function Feed({ adapter }: Props) {
         )}
       </AddVisitModal>
       </div>
-    </div>
+      </div>
+    </>
   )
 }
