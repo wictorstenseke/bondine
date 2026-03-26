@@ -1,21 +1,27 @@
-import { Button } from "@/components/ui/button"
+import { BrowserRouter, Routes, Route } from "react-router"
+import { Feed } from "@/pages/Feed"
+import { Restaurants } from "@/pages/Restaurants"
+import { AppHeader } from "@/components/Header"
+import { AppSidebar } from "@/components/Sidebar"
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
+import { activeAdapter } from "@/lib/storage"
+import { AddVisitProvider } from "@/context/AddVisitContext"
 
-export function App() {
+export default function App() {
   return (
-    <div className="flex min-h-svh p-6">
-      <div className="flex max-w-md min-w-0 flex-col gap-4 text-sm leading-loose">
-        <div>
-          <h1 className="font-medium">Project ready!</h1>
-          <p>You may now add components and start building.</p>
-          <p>We&apos;ve already added the button component for you.</p>
-          <Button className="mt-2">Button</Button>
-        </div>
-        <div className="font-mono text-xs text-muted-foreground">
-          (Press <kbd>d</kbd> to toggle dark mode)
-        </div>
-      </div>
-    </div>
+    <BrowserRouter>
+      <AddVisitProvider>
+        <SidebarProvider>
+          <AppSidebar />
+          <SidebarInset>
+            <AppHeader />
+            <Routes>
+              <Route path="/" element={<Feed adapter={activeAdapter} />} />
+              <Route path="/restaurants" element={<Restaurants />} />
+            </Routes>
+          </SidebarInset>
+        </SidebarProvider>
+      </AddVisitProvider>
+    </BrowserRouter>
   )
 }
-
-export default App
