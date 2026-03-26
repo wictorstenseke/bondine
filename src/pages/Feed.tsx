@@ -5,7 +5,7 @@ import { VisitCard } from "@/components/VisitCard"
 import { VisitForm } from "@/components/VisitForm"
 import { VisitDetail } from "@/components/VisitDetail"
 import { AddVisitModal } from "@/components/AddVisitModal"
-import { FilterBar } from "@/components/FilterBar"
+import { FiltersMenu } from "@/components/FiltersMenu"
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty-state"
 import { Button } from "@/components/ui/button"
 import { UtensilsCrossed } from "lucide-react"
@@ -34,7 +34,11 @@ export function Feed({ adapter }: Props) {
 
   return (
     <>
-      <FilterBar mealTypes={mealTypes} active={activeFilter} onChange={setActiveFilter} />
+      <FiltersMenu
+        mealTypes={mealTypes}
+        activeFilter={activeFilter}
+        onFilterChange={setActiveFilter}
+      />
       <div className="mx-auto max-w-xl">
       <div className="p-4">
       {sorted.length === 0 ? (
