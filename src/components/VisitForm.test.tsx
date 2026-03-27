@@ -35,7 +35,7 @@ describe("VisitForm", () => {
       <VisitForm
         onSubmit={onSubmit}
         restaurantSuggestions={["Trattoria Roma", "Sushi Palace"]}
-      />,
+      />
     )
     await userEvent.type(screen.getByLabelText(/restaurant/i), "Trat")
     expect(screen.getByText("Trattoria Roma")).toBeInTheDocument()
@@ -47,7 +47,7 @@ describe("VisitForm", () => {
       <VisitForm
         onSubmit={onSubmit}
         restaurantSuggestions={["Trattoria Roma"]}
-      />,
+      />
     )
     await userEvent.type(screen.getByLabelText(/restaurant/i), "Trat")
     await userEvent.click(screen.getByText("Trattoria Roma"))
@@ -61,6 +61,8 @@ describe("VisitForm", () => {
     const onSubmit = vi.fn()
     render(<VisitForm onSubmit={onSubmit} />)
 
-    expect(screen.getByLabelText(/date/i)).toHaveValue("2026-03-26")
+    expect(
+      screen.getByRole("button", { name: /march 26, 2026/i })
+    ).toBeInTheDocument()
   })
 })
