@@ -1,11 +1,16 @@
 import { useState, useRef } from "react"
 import { CalendarIcon } from "lucide-react"
+import { FlameIcon } from "@/components/FlameIcon"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 import type { Visit } from "@/lib/storage/types"
 
 type VisitFormData = Omit<Visit, "id" | "createdAt">
@@ -25,16 +30,29 @@ function toLocalDateString(date: Date): string {
 
 const PRESET_MEAL_TYPES = ["Lunch", "Dinner"]
 
-export function VisitForm({ onSubmit, defaultValues, restaurantSuggestions = [] }: Props) {
-  const [restaurantName, setRestaurantName] = useState(defaultValues?.restaurantName ?? "")
+export function VisitForm({
+  onSubmit,
+  defaultValues,
+  restaurantSuggestions = [],
+}: Props) {
+  const [restaurantName, setRestaurantName] = useState(
+    defaultValues?.restaurantName ?? ""
+  )
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [calendarOpen, setCalendarOpen] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
-  const [date, setDate] = useState(defaultValues?.date ?? toLocalDateString(new Date()))
-  const [mealType, setMealType] = useState<string | null>(defaultValues?.mealType ?? null)
+  const [date, setDate] = useState(
+    defaultValues?.date ?? toLocalDateString(new Date())
+  )
+  const [mealType, setMealType] = useState<string | null>(
+    defaultValues?.mealType ?? null
+  )
   const [customMealType, setCustomMealType] = useState("")
   const [showCustomMealType, setShowCustomMealType] = useState(false)
-  const [rating, setRating] = useState<number | null>(defaultValues?.rating ?? null)
+  const [rating, setRating] = useState<number | null>(
+    defaultValues?.rating ?? null
+  )
+  const [hoverRating, setHoverRating] = useState<number | null>(null)
   const [note, setNote] = useState(defaultValues?.note ?? "")
 
   function handleSubmit(e: React.FormEvent) {
@@ -81,38 +99,45 @@ export function VisitForm({ onSubmit, defaultValues, restaurantSuggestions = [] 
           required
           autoComplete="off"
         />
-        {showSuggestions && restaurantSuggestions.length > 0 && (() => {
-          const filtered = restaurantSuggestions.filter((s) =>
-            s.toLowerCase().includes(restaurantName.toLowerCase()) && restaurantName.length > 0
-          )
-          return filtered.length > 0 ? (
-            <ul className="absolute top-full z-10 mt-1 w-full rounded-md border bg-popover shadow-md">
-              {filtered.map((s) => (
-                <li key={s}>
-                  <button
-                    type="button"
-                    className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => {
-                      setRestaurantName(s)
-                      setShowSuggestions(false)
-                      inputRef.current?.focus()
-                    }}
-                  >
-                    {s}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : null
-        })()}
+        {showSuggestions &&
+          restaurantSuggestions.length > 0 &&
+          (() => {
+            const filtered = restaurantSuggestions.filter(
+              (s) =>
+                s.toLowerCase().includes(restaurantName.toLowerCase()) &&
+                restaurantName.length > 0
+            )
+            return filtered.length > 0 ? (
+              <ul className="absolute top-full z-10 mt-1 w-full rounded-md border bg-popover shadow-md">
+                {filtered.map((s) => (
+                  <li key={s}>
+                    <button
+                      type="button"
+                      className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => {
+                        setRestaurantName(s)
+                        setShowSuggestions(false)
+                        inputRef.current?.focus()
+                      }}
+                    >
+                      {s}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null
+          })()}
       </div>
 
       <div className="flex flex-col gap-1.5">
         <Label>Date</Label>
         <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
           <PopoverTrigger asChild>
-            <Button variant="outline" className="w-full justify-start font-normal">
+            <Button
+              variant="outline"
+              className="w-full justify-start font-normal"
+            >
               <CalendarIcon className="mr-2 size-4 text-muted-foreground" />
               {new Date(date + "T00:00:00").toLocaleDateString(undefined, {
                 year: "numeric",
@@ -140,30 +165,26 @@ export function VisitForm({ onSubmit, defaultValues, restaurantSuggestions = [] 
         <Label>Meal type</Label>
         <div className="flex flex-wrap gap-2">
           {PRESET_MEAL_TYPES.map((type) => (
-            <button
+            <Button
               key={type}
               type="button"
-              onClick={() => handleMealTypePill(type)}
-              className={`rounded-full border px-3 py-1 text-sm transition-colors ${
+              variant={
                 mealType === type.toLowerCase() && !showCustomMealType
-                  ? "border-amber-500 bg-amber-500 text-black"
-                  : "border-border hover:border-amber-500"
-              }`}
+                  ? "default"
+                  : "outline"
+              }
+              onClick={() => handleMealTypePill(type)}
             >
               {type}
-            </button>
+            </Button>
           ))}
-          <button
+          <Button
             type="button"
+            variant={showCustomMealType ? "default" : "outline"}
             onClick={handleOtherPill}
-            className={`rounded-full border px-3 py-1 text-sm transition-colors ${
-              showCustomMealType
-                ? "border-amber-500 bg-amber-500 text-black"
-                : "border-border hover:border-amber-500"
-            }`}
           >
             Other…
-          </button>
+          </Button>
         </div>
         {showCustomMealType && (
           <Input
@@ -178,17 +199,19 @@ export function VisitForm({ onSubmit, defaultValues, restaurantSuggestions = [] 
       <div className="flex flex-col gap-1.5">
         <Label>Rating</Label>
         <div className="flex items-center gap-1">
-          {[0, 1, 2, 3, 4, 5].map((n) => (
+          {[1, 2, 3, 4, 5].map((n) => (
             <button
               key={n}
               type="button"
               onClick={() => setRating(rating === n ? null : n)}
+              onMouseEnter={() => setHoverRating(n)}
+              onMouseLeave={() => setHoverRating(null)}
               aria-label={`${n} flames`}
-              className={`text-xl transition-opacity ${
-                rating !== null && n <= rating ? "opacity-100" : "opacity-30"
+              className={`transition-opacity ${
+                n <= (hoverRating ?? rating ?? 0) ? "opacity-100" : "opacity-30"
               }`}
             >
-              🔥
+              <FlameIcon className="size-8" />
             </button>
           ))}
         </div>

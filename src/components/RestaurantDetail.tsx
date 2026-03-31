@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button"
 import { VisitCard } from "@/components/VisitCard"
 import type { Visit } from "@/lib/storage/types"
+import { FlameIcon } from "@/components/FlameIcon"
 
 interface Props {
   name: string
@@ -12,7 +13,8 @@ export function RestaurantDetail({ name, visits, onAddVisit }: Props) {
   const ratedVisits = visits.filter((v) => v.rating !== null)
   const avgRating =
     ratedVisits.length > 0
-      ? ratedVisits.reduce((sum, v) => sum + (v.rating ?? 0), 0) / ratedVisits.length
+      ? ratedVisits.reduce((sum, v) => sum + (v.rating ?? 0), 0) /
+        ratedVisits.length
       : null
 
   const sorted = [...visits].sort((a, b) => b.date.localeCompare(a.date))
@@ -24,7 +26,13 @@ export function RestaurantDetail({ name, visits, onAddVisit }: Props) {
           <h2 className="text-lg font-medium">{name}</h2>
           <p className="text-sm text-muted-foreground">
             {visits.length} {visits.length === 1 ? "visit" : "visits"}
-            {avgRating !== null && ` · avg ${avgRating.toFixed(1)} 🔥`}
+            {avgRating !== null && (
+              <>
+                {" "}
+                · avg {avgRating.toFixed(1)}{" "}
+                <FlameIcon className="inline size-3.5 align-text-bottom" />
+              </>
+            )}
           </p>
         </div>
         <Button size="sm" onClick={() => onAddVisit(name)}>

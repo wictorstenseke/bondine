@@ -1,4 +1,5 @@
 import type { Visit } from "@/lib/storage/types"
+import { FlameIcon } from "@/components/FlameIcon"
 
 interface Props {
   visit: Visit
@@ -13,7 +14,9 @@ export function VisitCard({ visit, onClick }: Props) {
     >
       <div className="flex items-start justify-between gap-2">
         <span className="font-medium">{visit.restaurantName}</span>
-        <span className="shrink-0 text-sm text-muted-foreground">{visit.date}</span>
+        <span className="shrink-0 text-sm text-muted-foreground">
+          {visit.date}
+        </span>
       </div>
 
       <div className="mt-1 flex flex-wrap items-center gap-2">
@@ -26,8 +29,10 @@ export function VisitCard({ visit, onClick }: Props) {
           </span>
         )}
         {visit.rating !== null && (
-          <span data-testid="rating" className="text-sm">
-            {"🔥".repeat(visit.rating)} {visit.rating === 0 && "0"}
+          <span data-testid="rating" className="flex items-center gap-0.5">
+            {Array.from({ length: visit.rating }, (_, i) => (
+              <FlameIcon key={i} className="size-4" />
+            ))}
           </span>
         )}
       </div>

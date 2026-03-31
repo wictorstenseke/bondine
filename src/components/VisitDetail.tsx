@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { VisitForm } from "@/components/VisitForm"
 import type { Visit } from "@/lib/storage/types"
+import { FlameIcon } from "@/components/FlameIcon"
 
 interface Props {
   visit: Visit
@@ -49,10 +50,16 @@ export function VisitDetail({ visit, onUpdate, onDelete }: Props) {
       )}
 
       {visit.rating !== null && (
-        <p>{"🔥".repeat(visit.rating)}{visit.rating === 0 ? "0 flames" : ""}</p>
+        <div className="flex items-center gap-0.5">
+          {Array.from({ length: visit.rating }, (_, i) => (
+            <FlameIcon key={i} className="size-5" />
+          ))}
+        </div>
       )}
 
-      {visit.note && <p className="text-sm text-muted-foreground">{visit.note}</p>}
+      {visit.note && (
+        <p className="text-sm text-muted-foreground">{visit.note}</p>
+      )}
 
       <div className="flex gap-2 pt-2">
         <Button variant="outline" onClick={() => setEditing(true)}>
@@ -67,7 +74,8 @@ export function VisitDetail({ visit, onUpdate, onDelete }: Props) {
             <AlertDialogHeader>
               <AlertDialogTitle>Delete this visit?</AlertDialogTitle>
               <AlertDialogDescription>
-                This will permanently remove the visit to {visit.restaurantName}.
+                This will permanently remove the visit to {visit.restaurantName}
+                .
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
