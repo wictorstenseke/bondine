@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from "react"
+import { createContext, useContext, useEffect, useState } from "react"
 
 interface AddVisitContextValue {
   open: boolean
@@ -9,6 +9,24 @@ const AddVisitContext = createContext<AddVisitContextValue | null>(null)
 
 export function AddVisitProvider({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      // Cmd+N on macOS, Ctrl+N on Windows/Linux
+      const mod = e.metaKey || e.ctrlKey
+      if (mod && (e.key === "k" || e.key === "K")) {
+        const target = e.target as HTMLElement | null
+        const tag = target?.tagName
+        if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable)
+          return
+        e.preventDefault()
+        setOpen(true)
+      }
+    }
+    window.addEventListener("keydown", handler)
+    return () => window.removeEventListener("keydown", handler)
+  }, [])
+
   return (
     <AddVisitContext.Provider value={{ open, setOpen }}>
       {children}

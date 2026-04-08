@@ -2,12 +2,14 @@ import { useMediaQuery } from "@/hooks/useMediaQuery"
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
 import {
   Drawer,
   DrawerContent,
+  DrawerDescription,
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer"
@@ -17,9 +19,16 @@ interface Props {
   onOpenChange: (open: boolean) => void
   children: React.ReactNode
   title?: string
+  description?: string
 }
 
-export function AddVisitModal({ open, onOpenChange, children, title = "Add visit" }: Props) {
+export function AddVisitModal({
+  open,
+  onOpenChange,
+  children,
+  title = "Add visit",
+  description = "Log a new restaurant visit.",
+}: Props) {
   const isDesktop = useMediaQuery("(min-width: 768px)")
 
   if (isDesktop) {
@@ -28,6 +37,9 @@ export function AddVisitModal({ open, onOpenChange, children, title = "Add visit
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
+            <DialogDescription className="sr-only">
+              {description}
+            </DialogDescription>
           </DialogHeader>
           {children}
         </DialogContent>
@@ -40,6 +52,9 @@ export function AddVisitModal({ open, onOpenChange, children, title = "Add visit
       <DrawerContent>
         <DrawerHeader>
           <DrawerTitle>{title}</DrawerTitle>
+          <DrawerDescription className="sr-only">
+            {description}
+          </DrawerDescription>
         </DrawerHeader>
         <div className="p-4">{children}</div>
       </DrawerContent>
