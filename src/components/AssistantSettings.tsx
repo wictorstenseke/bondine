@@ -2,7 +2,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useOpenRouterKey } from "@/hooks/useOpenRouterKey"
+import { useAssistant } from "@/context/AssistantContext"
 import { ExternalLink } from "lucide-react"
 
 function maskKey(key: string): string {
@@ -15,7 +15,7 @@ interface Props {
 }
 
 export function AssistantSettings({ onClose }: Props) {
-  const { key, hasKey, setKey, clearKey } = useOpenRouterKey()
+  const { key, hasKey, setKey, clearKey } = useAssistant()
   const [editing, setEditing] = useState(!hasKey)
   const [draft, setDraft] = useState("")
 

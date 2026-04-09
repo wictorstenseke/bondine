@@ -19,7 +19,6 @@ import { Settings } from "lucide-react"
 import { AssistantChat } from "./AssistantChat"
 import { AssistantSettings } from "./AssistantSettings"
 import { useAssistant } from "@/context/AssistantContext"
-import { useOpenRouterKey } from "@/hooks/useOpenRouterKey"
 import { activeAdapter } from "@/lib/storage"
 
 /**
@@ -30,8 +29,7 @@ import { activeAdapter } from "@/lib/storage"
  *  - wiring the chat to the live visit store (fresh snapshot per session)
  */
 export function AssistantDrawer() {
-  const { open, setOpen } = useAssistant()
-  const { hasKey, key } = useOpenRouterKey()
+  const { open, setOpen, hasKey, key } = useAssistant()
   const isDesktop = useMediaQuery("(min-width: 768px)")
   const [showSettings, setShowSettings] = useState(false)
 
