@@ -10,7 +10,7 @@ afterEach(() => {
 
 describe("VisitForm", () => {
   it("calls onSubmit with restaurant name and date when submitted", async () => {
-    const onSubmit = vi.fn<[Omit<Visit, "id" | "createdAt">], void>()
+    const onSubmit = vi.fn<(data: Omit<Visit, "id" | "createdAt">) => void>()
     render(<VisitForm onSubmit={onSubmit} />)
 
     await userEvent.type(screen.getByLabelText(/restaurant/i), "Trattoria Roma")
