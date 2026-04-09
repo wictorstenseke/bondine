@@ -2,7 +2,8 @@ import { describe, it, expect, vi } from "vitest"
 import { renderHook, act, waitFor } from "@testing-library/react"
 import { useAssistantChat } from "./useAssistantChat"
 import { OpenRouterError } from "@/lib/ai/errorMapper"
-import type { StreamRequest } from "@/lib/ai/types"
+import type { StreamChunk, StreamRequest } from "@/lib/ai/types"
+import type { CreateVisitArgs } from "@/lib/ai/tools"
 import type { Visit } from "@/lib/storage/types"
 
 const FIXED_NOW = new Date("2026-04-08T12:30:00Z")
@@ -20,18 +21,22 @@ const fixtureVisits: Visit[] = [
 ]
 
 function makeStream(chunks: string[]) {
-  return async function* (_: StreamRequest) {
+  return async function* (_: StreamRequest): AsyncIterable<StreamChunk> {
     void _
-    for (const c of chunks) yield c
+    for (const c of chunks) yield { type: "content", delta: c }
   }
 }
 
 function makeErrorStream(err: unknown) {
   // eslint-disable-next-line require-yield
-  return async function* (_: StreamRequest) {
+  return async function* (_: StreamRequest): AsyncIterable<StreamChunk> {
     void _
     throw err
   }
+}
+
+async function* chunkStream(chunks: StreamChunk[]): AsyncIterable<StreamChunk> {
+  for (const c of chunks) yield c
 }
 
 describe("useAssistantChat", () => {
@@ -62,9 +67,11 @@ describe("useAssistantChat", () => {
 
   it("includes a system message built from visits on every request", async () => {
     const seen: StreamRequest[] = []
-    const stream = async function* (req: StreamRequest) {
+    const stream = async function* (
+      req: StreamRequest
+    ): AsyncIterable<StreamChunk> {
       seen.push(req)
-      yield "ok"
+      yield { type: "content", delta: "ok" }
     }
     const { result } = renderHook(() =>
       useAssistantChat({
@@ -107,11 +114,13 @@ describe("useAssistantChat", () => {
 
   it("retry re-sends the last user message and replaces the errored bubble", async () => {
     let call = 0
-    const stream = async function* (_: StreamRequest) {
+    const stream = async function* (
+      _: StreamRequest
+    ): AsyncIterable<StreamChunk> {
       void _
       call++
       if (call === 1) throw new OpenRouterError(429, "rate limited")
-      yield "second try succeeded"
+      yield { type: "content", delta: "second try succeeded" }
     }
     const { result } = renderHook(() =>
       useAssistantChat({
@@ -161,9 +170,11 @@ describe("useAssistantChat", () => {
 
   it("multi-turn: second send includes prior assistant reply in the wire messages", async () => {
     const seen: StreamRequest[] = []
-    const stream = async function* (req: StreamRequest) {
+    const stream = async function* (
+      req: StreamRequest
+    ): AsyncIterable<StreamChunk> {
       seen.push(req)
-      yield "first answer"
+      yield { type: "content", delta: "first answer" }
     }
     const { result } = renderHook(() =>
       useAssistantChat({
@@ -208,13 +219,12 @@ describe("useAssistantChat", () => {
   })
 
   it("invariance: ignores any external filter state and reads full visits each send", async () => {
-    // The hook uses getVisits() to snapshot on every call — there is no
-    // coupling to Feed filter state. We verify by having getVisits return the
-    // full fixture regardless of any caller-side filtering.
     const seen: StreamRequest[] = []
-    const stream = async function* (req: StreamRequest) {
+    const stream = async function* (
+      req: StreamRequest
+    ): AsyncIterable<StreamChunk> {
       seen.push(req)
-      yield "ok"
+      yield { type: "content", delta: "ok" }
     }
     const getVisits = vi.fn(() => fixtureVisits)
 
@@ -231,5 +241,84 @@ describe("useAssistantChat", () => {
 
     expect(getVisits).toHaveBeenCalled()
     expect(seen[0]!.messages[0]!.content).toContain("Trattoria Roma")
+  })
+})
+
+describe("tool call — create_visit", () => {
+  const argsJson = JSON.stringify({
+    restaurantName: "Noma",
+    rating: 4,
+  } satisfies Partial<CreateVisitArgs>)
+
+  function makeHook() {
+    const stream = vi
+      .fn()
+      .mockReturnValue(
+        chunkStream([{ type: "tool_call", name: "create_visit", argsJson }])
+      )
+    const { result } = renderHook(() =>
+      useAssistantChat({ apiKey: "k", getVisits: () => [], stream })
+    )
+    return result
+  }
+
+  it("sets pendingVisit when stream yields a tool_call chunk", async () => {
+    const result = makeHook()
+    await act(async () => {
+      await result.current.send("went to Noma")
+    })
+    expect(result.current.pendingVisit).toEqual({
+      restaurantName: "Noma",
+      rating: 4,
+    })
+  })
+
+  it("clears pendingVisit on cancelVisit", async () => {
+    const result = makeHook()
+    await act(async () => {
+      await result.current.send("went to Noma")
+    })
+    await act(async () => {
+      result.current.cancelVisit()
+    })
+    expect(result.current.pendingVisit).toBeNull()
+  })
+
+  it("calls addVisit with a full Visit and clears pendingVisit on confirmVisit", async () => {
+    const result = makeHook()
+    await act(async () => {
+      await result.current.send("went to Noma")
+    })
+    const addVisit = vi.fn()
+    await act(async () => {
+      result.current.confirmVisit(addVisit)
+    })
+    expect(addVisit).toHaveBeenCalledOnce()
+    const calledWith = addVisit.mock.calls[0][0] as Visit
+    expect(calledWith.restaurantName).toBe("Noma")
+    expect(calledWith.rating).toBe(4)
+    expect(calledWith.id).toBeDefined()
+    expect(calledWith.createdAt).toBeDefined()
+    expect(result.current.pendingVisit).toBeNull()
+  })
+
+  it("clears pendingVisit when user sends a new message", async () => {
+    const stream = vi
+      .fn()
+      .mockReturnValueOnce(
+        chunkStream([{ type: "tool_call", name: "create_visit", argsJson }])
+      )
+      .mockReturnValueOnce(chunkStream([{ type: "content", delta: "ok" }]))
+    const { result } = renderHook(() =>
+      useAssistantChat({ apiKey: "k", getVisits: () => [], stream })
+    )
+    await act(async () => {
+      await result.current.send("went to Noma")
+    })
+    expect(result.current.pendingVisit).not.toBeNull()
+    await act(async () => {
+      await result.current.send("what about tomorrow?")
+    })
+    expect(result.current.pendingVisit).toBeNull()
   })
 })

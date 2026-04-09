@@ -1,9 +1,16 @@
 import { useCallback, useRef, useState } from "react"
+import { nanoid } from "nanoid"
 import { streamChat } from "@/lib/ai/openrouterClient"
 import { buildChatContext } from "@/lib/ai/buildChatContext"
 import { mapError } from "@/lib/ai/errorMapper"
 import { DEFAULT_MODEL } from "@/lib/ai/config"
-import type { ChatMessage, MappedError, StreamRequest } from "@/lib/ai/types"
+import { VISIT_TOOLS, type CreateVisitArgs } from "@/lib/ai/tools"
+import type {
+  ChatMessage,
+  MappedError,
+  StreamChunk,
+  StreamRequest,
+} from "@/lib/ai/types"
 import type { Visit } from "@/lib/storage/types"
 
 export interface UiMessage {
@@ -13,7 +20,7 @@ export interface UiMessage {
   error?: MappedError
 }
 
-type StreamFn = (req: StreamRequest) => AsyncIterable<string>
+type StreamFn = (req: StreamRequest) => AsyncIterable<StreamChunk>
 
 interface Options {
   apiKey: string | null
@@ -34,12 +41,17 @@ const nextId = () => `m${++idCounter}`
  * each request via the context builder, streams via the OpenRouter client,
  * appends deltas to the current assistant message, and maps errors.
  *
+ * Also handles `create_visit` tool calls: when the LLM calls the tool, the
+ * parsed args are stored in `pendingVisit`. The caller can confirm (which
+ * saves the visit) or cancel.
+ *
  * Session-only: there is no persistence. The message list lives in React
  * state and dies with the component.
  */
 export function useAssistantChat(opts: Options) {
   const [messages, setMessages] = useState<UiMessage[]>([])
   const [isStreaming, setIsStreaming] = useState(false)
+  const [pendingVisit, setPendingVisit] = useState<CreateVisitArgs | null>(null)
   const abortRef = useRef<AbortController | null>(null)
 
   const runTurn = useCallback(
@@ -85,17 +97,32 @@ export function useAssistantChat(opts: Options) {
 
       const streamFn: StreamFn = opts.stream ?? streamChat
       try {
-        for await (const delta of streamFn({
+        for await (const chunk of streamFn({
           apiKey: opts.apiKey,
           model: opts.model ?? DEFAULT_MODEL,
           messages: wireMessages,
           signal: controller.signal,
+          tools: VISIT_TOOLS,
         })) {
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === assistantId ? { ...m, content: m.content + delta } : m
+          if (chunk.type === "content") {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantId
+                  ? { ...m, content: m.content + chunk.delta }
+                  : m
+              )
             )
-          )
+          } else if (
+            chunk.type === "tool_call" &&
+            chunk.name === "create_visit"
+          ) {
+            try {
+              const args = JSON.parse(chunk.argsJson) as CreateVisitArgs
+              setPendingVisit(args)
+            } catch {
+              // ignore malformed tool call args
+            }
+          }
         }
       } catch (err) {
         const mapped = mapError(err)
@@ -114,6 +141,9 @@ export function useAssistantChat(opts: Options) {
     async (text: string) => {
       const trimmed = text.trim()
       if (!trimmed || isStreaming) return
+
+      // Clear any pending visit draft when the user sends a new message.
+      setPendingVisit(null)
 
       const userMsg: UiMessage = {
         id: nextId(),
@@ -155,5 +185,36 @@ export function useAssistantChat(opts: Options) {
     setIsStreaming(false)
   }, [])
 
-  return { messages, isStreaming, send, retry, reset }
+  const confirmVisit = useCallback(
+    (addVisit: (visit: Visit) => void) => {
+      if (!pendingVisit) return
+      const today = new Date().toISOString().slice(0, 10)
+      addVisit({
+        id: nanoid(),
+        restaurantName: pendingVisit.restaurantName,
+        date: pendingVisit.date ?? today,
+        mealType: pendingVisit.mealType ?? null,
+        rating: pendingVisit.rating ?? null,
+        note: pendingVisit.note ?? null,
+        createdAt: new Date().toISOString(),
+      })
+      setPendingVisit(null)
+    },
+    [pendingVisit]
+  )
+
+  const cancelVisit = useCallback(() => {
+    setPendingVisit(null)
+  }, [])
+
+  return {
+    messages,
+    isStreaming,
+    send,
+    retry,
+    reset,
+    pendingVisit,
+    confirmVisit,
+    cancelVisit,
+  }
 }
