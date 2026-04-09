@@ -25,7 +25,7 @@ export function VisitCard({ visit, onClick }: Props) {
             data-testid="meal-type"
             className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs text-amber-400"
           >
-            {visit.mealType}
+            {visit.mealType.charAt(0).toUpperCase() + visit.mealType.slice(1)}
           </span>
         )}
         {visit.rating !== null && (

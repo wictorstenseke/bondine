@@ -24,6 +24,7 @@ export function AssistantSettings({ onClose }: Props) {
     setKey(draft)
     setDraft("")
     setEditing(false)
+    onClose()
   }
 
   const handleRemove = () => {

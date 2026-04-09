@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import { useMediaQuery } from "@/hooks/useMediaQuery"
 import {
   Dialog,
@@ -15,19 +15,10 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer"
 import { Button } from "@/components/ui/button"
-import { Settings, UtensilsCrossed } from "lucide-react"
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty-state"
+import { Settings } from "lucide-react"
 import { AssistantChat } from "./AssistantChat"
 import { AssistantSettings } from "./AssistantSettings"
 import { useAssistant } from "@/context/AssistantContext"
-import { useAddVisit } from "@/context/AddVisitContext"
 import { useOpenRouterKey } from "@/hooks/useOpenRouterKey"
 import { activeAdapter } from "@/lib/storage"
 
@@ -40,17 +31,9 @@ import { activeAdapter } from "@/lib/storage"
  */
 export function AssistantDrawer() {
   const { open, setOpen } = useAssistant()
-  const { setOpen: setAddVisitOpen } = useAddVisit()
   const { hasKey, key } = useOpenRouterKey()
   const isDesktop = useMediaQuery("(min-width: 768px)")
   const [showSettings, setShowSettings] = useState(false)
-
-  // Snapshot visits on each open so the "empty history" check reflects
-  // current state. The chat hook re-reads on every send via getVisits.
-  const visitSnapshot = useMemo(() => {
-    if (!open) return []
-    return activeAdapter.getVisits()
-  }, [open])
 
   const getVisits = () => activeAdapter.getVisits()
 
@@ -65,33 +48,6 @@ export function AssistantDrawer() {
   const body = (() => {
     if (!hasKey || showSettings) {
       return <AssistantSettings onClose={() => setShowSettings(false)} />
-    }
-    if (visitSnapshot.length === 0) {
-      return (
-        <Empty className="border border-dashed">
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <UtensilsCrossed />
-            </EmptyMedia>
-            <EmptyTitle>No visits yet</EmptyTitle>
-            <EmptyDescription>
-              Log a visit first — I can only recommend from places you've been.
-            </EmptyDescription>
-          </EmptyHeader>
-          <EmptyContent>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                setOpen(false)
-                setAddVisitOpen(true)
-              }}
-            >
-              Add visit
-            </Button>
-          </EmptyContent>
-        </Empty>
-      )
     }
     return (
       <AssistantChat

@@ -21,8 +21,10 @@ describe("VisitCard", () => {
   })
 
   it("shows meal type when set", () => {
-    render(<VisitCard visit={{ ...base, mealType: "dinner" }} onClick={() => {}} />)
-    expect(screen.getByText("dinner")).toBeInTheDocument()
+    render(
+      <VisitCard visit={{ ...base, mealType: "dinner" }} onClick={() => {}} />
+    )
+    expect(screen.getByText("Dinner")).toBeInTheDocument()
   })
 
   it("hides meal type when null", () => {
@@ -31,7 +33,9 @@ describe("VisitCard", () => {
   })
 
   it("shows note when set", () => {
-    render(<VisitCard visit={{ ...base, note: "Great pasta" }} onClick={() => {}} />)
+    render(
+      <VisitCard visit={{ ...base, note: "Great pasta" }} onClick={() => {}} />
+    )
     expect(screen.getByText("Great pasta")).toBeInTheDocument()
   })
 

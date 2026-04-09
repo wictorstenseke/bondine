@@ -16,6 +16,7 @@ const SORT_OPTIONS: { label: string; value: SortOrder }[] = [
   { label: "Most recent", value: "recent" },
   { label: "Most visited", value: "visits" },
   { label: "Highest rated", value: "rating" },
+  { label: "Alphabetical", value: "alpha" },
 ]
 
 export interface FiltersMenuProps {
@@ -33,11 +34,10 @@ export function FiltersMenu({
   sort,
   onSortChange,
 }: FiltersMenuProps) {
-  const filterSummary =
-    activeFilter === null ? "All meals" : activeFilter
+  const filterSummary = activeFilter === null ? "All meals" : activeFilter
   const sortSummary =
     sort !== undefined
-      ? SORT_OPTIONS.find((o) => o.value === sort)?.label ?? ""
+      ? (SORT_OPTIONS.find((o) => o.value === sort)?.label ?? "")
       : ""
   const showSort = sort !== undefined && onSortChange !== undefined
 
@@ -50,9 +50,9 @@ export function FiltersMenu({
             variant="outline"
             size="sm"
             aria-label={showSort ? "Filter and sort" : "Filter visits"}
-            className="h-8 max-w-full min-w-0 rounded-md border-border bg-background shadow-xs gap-1.5 font-normal"
+            className="h-8 max-w-full min-w-0 gap-1.5 rounded-md border-border bg-background font-normal shadow-xs"
           >
-            <span className="truncate text-muted-foreground text-xs">
+            <span className="truncate text-xs text-muted-foreground">
               {filterSummary}
               {showSort ? (
                 <>

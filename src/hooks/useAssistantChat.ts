@@ -199,6 +199,14 @@ export function useAssistantChat(opts: Options) {
         createdAt: new Date().toISOString(),
       })
       setPendingVisit(null)
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: nextId(),
+          role: "assistant",
+          content: `Saved — ${pendingVisit.restaurantName} is in your visit history.`,
+        },
+      ])
     },
     [pendingVisit]
   )

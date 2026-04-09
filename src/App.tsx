@@ -13,7 +13,7 @@ import { CommandPalette } from "@/components/CommandPalette"
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <AddVisitProvider>
         <AssistantProvider>
           <CommandPaletteProvider>

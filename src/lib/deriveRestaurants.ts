@@ -1,6 +1,6 @@
 import type { Visit } from "./storage/types"
 
-export type SortOrder = "recent" | "visits" | "rating"
+export type SortOrder = "recent" | "visits" | "rating" | "alpha"
 
 export interface RestaurantSummary {
   name: string
@@ -9,7 +9,10 @@ export interface RestaurantSummary {
   lastVisited: string
 }
 
-export function deriveRestaurants(visits: Visit[], sort: SortOrder = "recent"): RestaurantSummary[] {
+export function deriveRestaurants(
+  visits: Visit[],
+  sort: SortOrder = "recent"
+): RestaurantSummary[] {
   const map = new Map<string, { dates: string[]; ratings: number[] }>()
 
   for (const v of visits) {
@@ -26,7 +29,10 @@ export function deriveRestaurants(visits: Visit[], sort: SortOrder = "recent"): 
     summaries.push({
       name,
       visitCount: dates.length,
-      avgRating: ratings.length > 0 ? ratings.reduce((a, b) => a + b, 0) / ratings.length : null,
+      avgRating:
+        ratings.length > 0
+          ? ratings.reduce((a, b) => a + b, 0) / ratings.length
+          : null,
       lastVisited: dates.slice().sort().reverse()[0],
     })
   }
@@ -39,6 +45,7 @@ export function deriveRestaurants(visits: Visit[], sort: SortOrder = "recent"): 
       const rb = b.avgRating ?? -1
       return rb - ra
     }
+    if (sort === "alpha") return a.name.localeCompare(b.name)
     return 0
   })
 }
