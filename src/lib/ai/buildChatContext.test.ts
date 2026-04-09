@@ -127,4 +127,9 @@ describe("buildChatContext", () => {
     expect(temporalIdx).toBeLessThan(personaIdx)
     expect(personaIdx).toBeLessThan(tableIdx)
   })
+
+  it("includes create_visit tool instruction in system prompt", () => {
+    const ctx = buildChatContext([], new Date("2026-04-09T12:00:00"))
+    expect(ctx).toContain("create_visit")
+  })
 })
