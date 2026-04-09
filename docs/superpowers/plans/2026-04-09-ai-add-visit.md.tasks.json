@@ -1,0 +1,93 @@
+{
+  "planPath": "docs/superpowers/plans/2026-04-09-ai-add-visit.md",
+  "tasks": [
+    {
+      "id": 9,
+      "subject": "Task 1: Define create_visit tool + extend stream types",
+      "status": "pending",
+      "description": "**Goal:** Create tool definition and StreamChunk union that the rest depends on.\n\n**Files:**\n- Create: `src/lib/ai/tools.ts`\n- Modify: `src/lib/ai/types.ts`\n\n**Acceptance Criteria:**\n- [ ] VISIT_TOOLS exported with create_visit function tool\n- [ ] Tool schema has restaurantName (required) + date, mealType, rating, note (optional)\n- [ ] StreamChunk discriminated union added to types.ts\n- [ ] StreamRequest has optional tools field\n\n**Verify:** `npm run typecheck` → no errors",
+      "metadata": {
+        "files": ["src/lib/ai/tools.ts", "src/lib/ai/types.ts"],
+        "verifyCommand": "npm run typecheck",
+        "acceptanceCriteria": [
+          "VISIT_TOOLS exported with create_visit",
+          "StreamChunk union defined",
+          "StreamRequest has optional tools field"
+        ]
+      }
+    },
+    {
+      "id": 10,
+      "subject": "Task 2: Extend openrouterClient to parse tool calls",
+      "status": "pending",
+      "blockedBy": [9],
+      "description": "**Goal:** streamChat passes tools to OpenRouter and yields StreamChunk instead of raw strings.\n\n**Files:**\n- Modify: `src/lib/ai/openrouterClient.ts`\n- Modify: `src/lib/ai/openrouterClient.test.ts`\n\n**Acceptance Criteria:**\n- [ ] streamChat return type is AsyncGenerator<StreamChunk>\n- [ ] Tools array included in request body when provided\n- [ ] Content deltas yield { type: 'content', delta } chunks\n- [ ] Tool call args accumulated, single tool_call chunk yielded on [DONE]\n- [ ] All existing and new tests pass\n\n**Verify:** `npm test -- openrouterClient` → all tests pass",
+      "metadata": {
+        "files": [
+          "src/lib/ai/openrouterClient.ts",
+          "src/lib/ai/openrouterClient.test.ts"
+        ],
+        "verifyCommand": "npm test -- openrouterClient",
+        "acceptanceCriteria": [
+          "streamChat yields StreamChunk",
+          "tool_calls parsed from SSE",
+          "existing tests updated and passing"
+        ]
+      }
+    },
+    {
+      "id": 11,
+      "subject": "Task 3: Add create_visit instruction to system prompt",
+      "status": "pending",
+      "blockedBy": [9],
+      "description": "**Goal:** LLM knows it has a create_visit tool and when to use it.\n\n**Files:**\n- Modify: `src/lib/ai/buildChatContext.ts`\n- Modify: `src/lib/ai/buildChatContext.test.ts`\n\n**Acceptance Criteria:**\n- [ ] System prompt instructs LLM to call create_visit when user wants to log a visit\n- [ ] Only ask for restaurantName if missing\n- [ ] Default to today if no date mentioned\n- [ ] Test verifies instruction present in built context\n\n**Verify:** `npm test -- buildChatContext` → all tests pass",
+      "metadata": {
+        "files": [
+          "src/lib/ai/buildChatContext.ts",
+          "src/lib/ai/buildChatContext.test.ts"
+        ],
+        "verifyCommand": "npm test -- buildChatContext",
+        "acceptanceCriteria": [
+          "create_visit mentioned in system prompt",
+          "test verifies instruction present"
+        ]
+      }
+    },
+    {
+      "id": 12,
+      "subject": "Task 4: Update useAssistantChat to manage pendingVisit",
+      "status": "pending",
+      "blockedBy": [10, 11],
+      "description": "**Goal:** Hook handles StreamChunk union, detects tool calls, stores pendingVisit, exposes confirmVisit/cancelVisit.\n\n**Files:**\n- Modify: `src/hooks/useAssistantChat.ts`\n- Modify: `src/hooks/useAssistantChat.test.ts`\n\n**Acceptance Criteria:**\n- [ ] pendingVisit: CreateVisitArgs | null exposed from hook\n- [ ] tool_call chunk sets pendingVisit\n- [ ] confirmVisit(addVisit) calls addVisit with defaults then clears draft\n- [ ] cancelVisit() clears draft\n- [ ] send() clears draft before sending\n- [ ] All existing tests pass\n\n**Verify:** `npm test -- useAssistantChat` → all tests pass",
+      "metadata": {
+        "files": [
+          "src/hooks/useAssistantChat.ts",
+          "src/hooks/useAssistantChat.test.ts"
+        ],
+        "verifyCommand": "npm test -- useAssistantChat",
+        "acceptanceCriteria": [
+          "pendingVisit state added",
+          "confirmVisit/cancelVisit exposed",
+          "send clears pending draft"
+        ]
+      }
+    },
+    {
+      "id": 13,
+      "subject": "Task 5: Render VisitDraftCard in AssistantChat",
+      "status": "pending",
+      "blockedBy": [12],
+      "description": "**Goal:** When pendingVisit is set, chat renders inline card with draft fields, Confirm and Cancel buttons.\n\n**Files:**\n- Modify: `src/components/AssistantChat.tsx`\n\n**Acceptance Criteria:**\n- [ ] AssistantChat accepts addVisit prop\n- [ ] VisitDraftCard renders when pendingVisit is non-null\n- [ ] Card shows restaurant, date, mealType, rating flames, note\n- [ ] Confirm calls confirmVisit(addVisit), Cancel calls cancelVisit\n- [ ] Call sites updated to pass addVisit prop\n\n**Verify:** `npm run typecheck && npm run build` → no errors",
+      "metadata": {
+        "files": ["src/components/AssistantChat.tsx"],
+        "verifyCommand": "npm run typecheck && npm run build",
+        "acceptanceCriteria": [
+          "addVisit prop accepted",
+          "VisitDraftCard renders on pendingVisit",
+          "call sites updated"
+        ]
+      }
+    }
+  ],
+  "lastUpdated": "2026-04-09T09:45:00Z"
+}
