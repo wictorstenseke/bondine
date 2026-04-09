@@ -24,11 +24,13 @@ import { Button } from "@/components/ui/button"
 import { FlameIcon } from "@/components/FlameIcon"
 import { useAssistantChat } from "@/hooks/useAssistantChat"
 import type { UiMessage } from "@/hooks/useAssistantChat"
+import type { CreateVisitArgs } from "@/lib/ai/tools"
 import type { Visit } from "@/lib/storage/types"
 
 interface Props {
   apiKey: string
   getVisits: () => Visit[]
+  addVisit: (visit: Visit) => void
 }
 
 const STARTER_SUGGESTIONS = [
@@ -37,11 +39,16 @@ const STARTER_SUGGESTIONS = [
   "Somewhere I haven't been in a while",
 ]
 
-export function AssistantChat({ apiKey, getVisits }: Props) {
-  const { messages, isStreaming, send, retry } = useAssistantChat({
-    apiKey,
-    getVisits,
-  })
+export function AssistantChat({ apiKey, getVisits, addVisit }: Props) {
+  const {
+    messages,
+    isStreaming,
+    send,
+    retry,
+    pendingVisit,
+    confirmVisit,
+    cancelVisit,
+  } = useAssistantChat({ apiKey, getVisits })
   const [draft, setDraft] = useState("")
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -95,6 +102,14 @@ export function AssistantChat({ apiKey, getVisits }: Props) {
               <FlameIcon className="size-4 animate-pulse text-amber-400" />
               <Shimmer>Stoking the embers…</Shimmer>
             </div>
+          )}
+
+          {pendingVisit && (
+            <VisitDraftCard
+              draft={pendingVisit}
+              onConfirm={() => confirmVisit(addVisit)}
+              onCancel={cancelVisit}
+            />
           )}
         </ConversationContent>
         <ConversationScrollButton />
@@ -183,5 +198,53 @@ function AssistantMessage({
         )}
       </MessageContent>
     </Message>
+  )
+}
+
+interface VisitDraftCardProps {
+  draft: CreateVisitArgs
+  onConfirm: () => void
+  onCancel: () => void
+}
+
+export function VisitDraftCard({
+  draft,
+  onConfirm,
+  onCancel,
+}: VisitDraftCardProps) {
+  const dateLabel = draft.date
+    ? new Date(draft.date + "T00:00:00").toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    : "Today"
+
+  return (
+    <div className="rounded-lg border bg-muted/40 p-3 text-sm">
+      <p className="font-medium">{draft.restaurantName}</p>
+      <p className="text-muted-foreground">{dateLabel}</p>
+      {draft.mealType && (
+        <p className="text-muted-foreground capitalize">{draft.mealType}</p>
+      )}
+      {draft.rating != null && (
+        <div className="mt-1 flex gap-0.5">
+          {Array.from({ length: draft.rating }).map((_, i) => (
+            <FlameIcon key={i} className="size-4 text-amber-400" />
+          ))}
+        </div>
+      )}
+      {draft.note && (
+        <p className="mt-1 text-muted-foreground italic">{draft.note}</p>
+      )}
+      <div className="mt-3 flex gap-2">
+        <Button size="sm" onClick={onConfirm}>
+          Save visit
+        </Button>
+        <Button size="sm" variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
+      </div>
+    </div>
   )
 }

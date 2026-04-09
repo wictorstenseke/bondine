@@ -93,7 +93,13 @@ export function AssistantDrawer() {
         </Empty>
       )
     }
-    return <AssistantChat apiKey={key!} getVisits={getVisits} />
+    return (
+      <AssistantChat
+        apiKey={key!}
+        getVisits={getVisits}
+        addVisit={activeAdapter.addVisit}
+      />
+    )
   })()
 
   const header = (
