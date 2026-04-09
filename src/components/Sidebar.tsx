@@ -37,13 +37,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <a href="/">
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                   <img
-                    src="/assets/icons/logo_Dark Wood.svg"
+                    src={`${import.meta.env.BASE_URL}assets/icons/logo_Dark Wood.svg`}
                     className="size-4 object-contain dark:hidden"
                     alt=""
                     aria-hidden="true"
                   />
                   <img
-                    src="/assets/icons/logo_White Ash.svg"
+                    src={`${import.meta.env.BASE_URL}assets/icons/logo_White Ash.svg`}
                     className="hidden size-4 object-contain dark:inline"
                     alt=""
                     aria-hidden="true"
