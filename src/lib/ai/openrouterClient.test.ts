@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach, vi } from "vitest"
 import { streamChat } from "./openrouterClient"
 import { OpenRouterError } from "./errorMapper"
+import type { StreamChunk } from "./types"
 
 function sseFrame(obj: unknown): string {
   return `data: ${JSON.stringify(obj)}\n\n`
@@ -25,6 +26,14 @@ function mockFetch(response: Response) {
   return vi.fn().mockResolvedValue(response)
 }
 
+function contentChunks(chunks: StreamChunk[]): string[] {
+  return chunks
+    .filter(
+      (c): c is { type: "content"; delta: string } => c.type === "content"
+    )
+    .map((c) => c.delta)
+}
+
 afterEach(() => {
   vi.unstubAllGlobals()
 })
@@ -39,15 +48,15 @@ describe("streamChat", () => {
     ])
     vi.stubGlobal("fetch", mockFetch(new Response(body, { status: 200 })))
 
-    const out: string[] = []
-    for await (const delta of streamChat({
+    const chunks: StreamChunk[] = []
+    for await (const chunk of streamChat({
       apiKey: "k",
       model: "m",
       messages: [{ role: "user", content: "hi" }],
     })) {
-      out.push(delta)
+      chunks.push(chunk)
     }
-    expect(out).toEqual(["Hello", ", ", "world"])
+    expect(contentChunks(chunks)).toEqual(["Hello", ", ", "world"])
   })
 
   it("stops cleanly on [DONE]", async () => {
@@ -59,15 +68,15 @@ describe("streamChat", () => {
     ])
     vi.stubGlobal("fetch", mockFetch(new Response(body, { status: 200 })))
 
-    const out: string[] = []
-    for await (const delta of streamChat({
+    const chunks: StreamChunk[] = []
+    for await (const chunk of streamChat({
       apiKey: "k",
       model: "m",
       messages: [],
     })) {
-      out.push(delta)
+      chunks.push(chunk)
     }
-    expect(out).toEqual(["one"])
+    expect(contentChunks(chunks)).toEqual(["one"])
   })
 
   it("throws OpenRouterError with status on non-2xx responses", async () => {
@@ -96,15 +105,15 @@ describe("streamChat", () => {
     ])
     vi.stubGlobal("fetch", mockFetch(new Response(body, { status: 200 })))
 
-    const out: string[] = []
-    for await (const delta of streamChat({
+    const chunks: StreamChunk[] = []
+    for await (const chunk of streamChat({
       apiKey: "k",
       model: "m",
       messages: [],
     })) {
-      out.push(delta)
+      chunks.push(chunk)
     }
-    expect(out).toEqual(["Hello"])
+    expect(contentChunks(chunks)).toEqual(["Hello"])
   })
 
   it("ignores malformed SSE frames", async () => {
@@ -115,15 +124,15 @@ describe("streamChat", () => {
     ])
     vi.stubGlobal("fetch", mockFetch(new Response(body, { status: 200 })))
 
-    const out: string[] = []
-    for await (const delta of streamChat({
+    const chunks: StreamChunk[] = []
+    for await (const chunk of streamChat({
       apiKey: "k",
       model: "m",
       messages: [],
     })) {
-      out.push(delta)
+      chunks.push(chunk)
     }
-    expect(out).toEqual(["ok"])
+    expect(contentChunks(chunks)).toEqual(["ok"])
   })
 
   it("honors AbortSignal passed through to fetch", async () => {
@@ -154,5 +163,118 @@ describe("streamChat", () => {
     controller.abort()
     await expect(promise).rejects.toThrow()
     expect(fetchMock).toHaveBeenCalled()
+  })
+
+  describe("tool_call chunks", () => {
+    it("yields a tool_call chunk with accumulated args from fragmented SSE frames", async () => {
+      const body = streamFromChunks([
+        sseFrame({
+          choices: [
+            {
+              delta: {
+                tool_calls: [
+                  {
+                    index: 0,
+                    function: { name: "create_visit", arguments: '{"res' },
+                  },
+                ],
+              },
+            },
+          ],
+        }),
+        sseFrame({
+          choices: [
+            {
+              delta: {
+                tool_calls: [
+                  {
+                    index: 0,
+                    function: { name: "", arguments: 'taurant":"Pizza Hut"}' },
+                  },
+                ],
+              },
+            },
+          ],
+        }),
+        "data: [DONE]\n\n",
+      ])
+      vi.stubGlobal("fetch", mockFetch(new Response(body, { status: 200 })))
+
+      const chunks: StreamChunk[] = []
+      for await (const chunk of streamChat({
+        apiKey: "k",
+        model: "m",
+        messages: [],
+      })) {
+        chunks.push(chunk)
+      }
+
+      expect(chunks).toHaveLength(1)
+      expect(chunks[0]).toEqual({
+        type: "tool_call",
+        name: "create_visit",
+        argsJson: '{"restaurant":"Pizza Hut"}',
+      })
+    })
+
+    it("yields only content chunks when no tool calls are present", async () => {
+      const body = streamFromChunks([
+        sseFrame({ choices: [{ delta: { content: "Sure" } }] }),
+        sseFrame({ choices: [{ delta: { content: "!" } }] }),
+        "data: [DONE]\n\n",
+      ])
+      vi.stubGlobal("fetch", mockFetch(new Response(body, { status: 200 })))
+
+      const chunks: StreamChunk[] = []
+      for await (const chunk of streamChat({
+        apiKey: "k",
+        model: "m",
+        messages: [],
+      })) {
+        chunks.push(chunk)
+      }
+
+      expect(chunks.every((c) => c.type === "content")).toBe(true)
+      expect(contentChunks(chunks)).toEqual(["Sure", "!"])
+    })
+
+    it("yields mixed content + tool_call chunks", async () => {
+      const body = streamFromChunks([
+        sseFrame({ choices: [{ delta: { content: "Adding" } }] }),
+        sseFrame({
+          choices: [
+            {
+              delta: {
+                tool_calls: [
+                  {
+                    index: 0,
+                    function: { name: "create_visit", arguments: '{"r":"X"}' },
+                  },
+                ],
+              },
+            },
+          ],
+        }),
+        "data: [DONE]\n\n",
+      ])
+      vi.stubGlobal("fetch", mockFetch(new Response(body, { status: 200 })))
+
+      const chunks: StreamChunk[] = []
+      for await (const chunk of streamChat({
+        apiKey: "k",
+        model: "m",
+        messages: [],
+      })) {
+        chunks.push(chunk)
+      }
+
+      expect(chunks).toHaveLength(2)
+      expect(chunks[0]).toEqual({ type: "content", delta: "Adding" })
+      expect(chunks[1]).toEqual({
+        type: "tool_call",
+        name: "create_visit",
+        argsJson: '{"r":"X"}',
+      })
+    })
   })
 })
